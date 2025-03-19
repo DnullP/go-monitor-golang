@@ -9,10 +9,21 @@ on:
   pull_request:
     paths:
       - 'kafka_exporter/**'
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Name'
+        required: true
+        default: 'World'
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
 
     steps:
       # 检出代码
@@ -27,19 +38,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
+      # 命名小写
+      - name: downcase REPO
+        run: |
+          echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+
       # 构建 Docker 镜像
       - name: Build Docker Image
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/kafka_exporter:${{ github.sha }} -f kafka_exporter/Dockerfile kafka_exporter
-
+          docker build -t ghcr.io/${REPO}:${{ github.sha }} -f kafka_exporter/Dockerfile .
+ 
       # 推送 Docker 镜像
       - name: Push Docker Image
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/kafka_exporter:${{ github.sha }}
+          docker push ghcr.io/${REPO}:${{ github.sha }}
 
       # 可选：推送带有最新标签的镜像
       - name: Push Docker Image with latest tag
         if: github.ref == 'refs/heads/main'
         run: |
-          docker tag ghcr.io/${{ github.repository_owner }}/kafka_exporter:${{ github.sha }} ghcr.io/${{ github.repository_owner }}/kafka_exporter:latest
-          docker push ghcr.io/${{ github.repository_owner }}/kafka_exporter:latest
+          docker tag ghcr.io/${REPO}:${{ github.sha }} ghcr.io/${REPO}:latest
+          docker push ghcr.io/${REPO}:latest
