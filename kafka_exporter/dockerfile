@@ -1,5 +1,9 @@
 FROM golang:1.23.1 AS builder
 
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
+
 WORKDIR /app
 
 COPY . .
