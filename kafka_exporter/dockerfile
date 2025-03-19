@@ -1,0 +1,16 @@
+FROM golang:1.23.1 AS builder
+
+WORKDIR /app
+
+COPY . .
+
+RUN go build -o /app/kafka_exporter ./kafka_exporter/main.go
+
+FROM alpine:latest
+
+WORKDIR /root/
+
+COPY --from=builder /app/kafka_exporter .
+
+# 指定容器启动时运行的命令
+CMD ["./kafka_exporter"]

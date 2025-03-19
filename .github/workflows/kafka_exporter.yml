@@ -1,0 +1,45 @@
+name: Build and Push Kafka Exporter Docker Image
+
+on:
+  push:
+    paths:
+      - 'kafka_exporter/**'
+    branches:
+      - main
+  pull_request:
+    paths:
+      - 'kafka_exporter/**'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 检出代码
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 登录到 GitHub Container Registry
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      # 构建 Docker 镜像
+      - name: Build Docker Image
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/kafka_exporter:${{ github.sha }} -f kafka_exporter/Dockerfile kafka_exporter
+
+      # 推送 Docker 镜像
+      - name: Push Docker Image
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/kafka_exporter:${{ github.sha }}
+
+      # 可选：推送带有最新标签的镜像
+      - name: Push Docker Image with latest tag
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker tag ghcr.io/${{ github.repository_owner }}/kafka_exporter:${{ github.sha }} ghcr.io/${{ github.repository_owner }}/kafka_exporter:latest
+          docker push ghcr.io/${{ github.repository_owner }}/kafka_exporter:latest
